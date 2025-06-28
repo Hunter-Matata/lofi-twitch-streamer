@@ -28,6 +28,17 @@ pip3 install python-dotenv
 Clone the repo in your designated folder and run the `start.sh`:
 ```bash
 git clone git@github.com:Hunter-Matata/lofi-twitch-streamer.git
-chmod +x start.sh
+chmod +x start.sh setup.sh
+./setup.sh
+```
+After that, you can run the start sh in your terminal to start the stream:
+```bash
 ./start.sh
+```
+
+## How to Restart/Stop the Stream?
+If you want to **restart** or **stop** the stream you can use the `systemd` CLIs below:
+```bash
+sudo systemctl stop stream.service
+sudo systemctl restart stream.service
 ```
