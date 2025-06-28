@@ -15,6 +15,7 @@ This project:
 - Python 3
 - FFmpeg
 - `python-dotenv` package
+- You also need to create a `.venv` directory inside of the repo directory
 
 Install dependencies:
 

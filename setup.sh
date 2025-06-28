@@ -56,9 +56,25 @@ if [ ! -f "requirements.txt" ]; then
     echo "[INFO] Created default requirements.txt"
 fi
 
-# Install Python dependencies
-echo "[INFO] Installing dependencies..."
-pip3 install -r requirements.txt
+# Ensure venv is available
+if ! python3 -m venv .venv 2>/dev/null; then
+    echo "[WARNING] python3-venv not found – trying to install it..."
+    sudo apt update && sudo apt install -y python3-venv
+    echo "[INFO] Retrying virtual environment creation..."
+    python3 -m venv .venv || {
+        echo "[ERROR] Failed to create virtual environment even after installing python3-venv."
+        exit 1
+    }
+else
+    echo "[INFO] Virtual environment created in .venv/"
+fi
+
+# Activate venv and install deps
+echo "[INFO] Activating virtual environment..."
+source .venv/bin/activate
+
+echo "[INFO] Installing Python dependencies..."
+pip install -r requirements.txt
 
 # Check for FFmpeg
 if ! command -v ffmpeg >/dev/null 2>&1; then

@@ -12,24 +12,39 @@ STREAM_KEY = os.getenv("STREAM_KEY")
 BACKGROUND = os.getenv("BACKGROUND")
 MAX_DURATION = int(os.getenv("MAX_DURATION", 169200))  # 47h
 
-def get_shuffled_playlist():
-    tracks = [os.path.join(AUDIO_DIR, f) for f in os.listdir(AUDIO_DIR) if f.endswith('.mp3')]
+CONCAT_FILE = "playlist.txt"
+
+def get_shuffled_tracks():
+    tracks = [
+        os.path.join(AUDIO_DIR, f)
+        for f in os.listdir(AUDIO_DIR)
+        if f.endswith(".mp3")
+    ]
+    if not tracks:
+        print("[ERROR] No MP3 files found in ./audio/")
+        exit(1)
     random.shuffle(tracks)
     return tracks
 
-def build_ffmpeg_command(track):
-    base_command = [
-        "ffmpeg",
-        "-re"
-    ]
+def write_concat_file(tracks):
+    with open(CONCAT_FILE, "w") as f:
+        for track in tracks:
+            f.write(f"file '{os.path.abspath(track)}'\n")
 
-    if BACKGROUND != "NONE":
-        base_command += ["-stream_loop", "-1", "-i", BACKGROUND]
+def build_ffmpeg_command():
+    cmd = ["ffmpeg", "-re"]
+
+    # Audio playlist
+    cmd += ["-f", "concat", "-safe", "0", "-i", CONCAT_FILE]
+
+    # Background
+    if BACKGROUND and BACKGROUND != "NONE":
+        cmd += ["-stream_loop", "-1", "-i", BACKGROUND]
     else:
-        base_command += ["-loop", "1", "-f", "lavfi", "-i", "color=c=black:s=1280x720"]
+        cmd += ["-loop", "1", "-f", "lavfi", "-i", "color=c=black:s=1280x720"]
 
-    base_command += [
-        "-i", track,
+    # Output
+    cmd += [
         "-c:v", "libx264",
         "-preset", "veryfast",
         "-b:v", "2500k",
@@ -40,27 +55,32 @@ def build_ffmpeg_command(track):
         f"{RTMP_URL}/{STREAM_KEY}"
     ]
 
-    return base_command
+    return cmd
 
-def main():
-    playlist = get_shuffled_playlist()
-    start_time = time.time()
+def run_stream_loop():
+    start = time.time()
+    elapsed = 0
 
-    for track in playlist:
-        elapsed = time.time() - start_time
-        if elapsed >= MAX_DURATION:
-            print("[INFO] Maximum stream duration reached. Exiting.")
-            break
+    while elapsed < MAX_DURATION:
+        print(f"[INFO] Shuffling playlist... {int(elapsed)}s elapsed / {MAX_DURATION}s max")
 
-        print(f"[INFO] Streaming: {track}")
+        tracks = get_shuffled_tracks()
+        write_concat_file(tracks)
+
+        cmd = build_ffmpeg_command()
+
+        # Estimate track total duration, fallback to 1h if unknown
         try:
-            cmd = build_ffmpeg_command(track)
+            subprocess.run(cmd, check=True)
+        except subprocess.CalledProcessError as e:
+            print(f"[WARNING] FFmpeg crashed: {e}")
+            time.sleep(5)
 
-            remaining_time = MAX_DURATION - int(elapsed)
-            subprocess.run(cmd + ["-t", str(remaining_time)], check=True)
-        except subprocess.CalledProcessError:
-            print("[WARNING] FFmpeg crashed. Retrying in 10 seconds...")
-            time.sleep(10)
+        elapsed = time.time() - start
+
+    print("[INFO] Max duration reached, stopping stream.")
+    if os.path.exists(CONCAT_FILE):
+        os.remove(CONCAT_FILE)
 
 if __name__ == "__main__":
-    main()
+    run_stream_loop()
