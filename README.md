@@ -27,7 +27,7 @@ pip3 install python-dotenv
 ## Installation
 Clone the repo in your designated folder and run the `start.sh`:
 ```bash
-git clone git@github.com:Hunter-Matata/lofi-stream.git
+git clone git@github.com:Hunter-Matata/lofi-twitch-streamer.git
 chmod +x start.sh
 ./start.sh
 ```
