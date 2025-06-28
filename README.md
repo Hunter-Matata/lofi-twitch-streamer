@@ -15,7 +15,7 @@ This project:
 - Python 3
 - FFmpeg
 - `python-dotenv` package
-- You also need to create a `.venv` directory inside of the repo directory
+- **INFO**: You need to clone the repo into `/opt/` otherwise you need to update the `stream.service` paths to your directory
 
 Install dependencies:
 
