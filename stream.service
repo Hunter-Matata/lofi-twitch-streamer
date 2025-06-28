@@ -1,0 +1,14 @@
+[Unit]
+Description=Lofi Stream
+After=network.target
+
+[Service]
+WorkingDirectory=/opt/lofi-stream
+ExecStart=/usr/bin/python3 /opt/lofi-stream/stream.py
+Restart=always
+RestartSec=5
+User=root
+Environment="PYTHONUNBUFFERED=1"
+
+[Install]
+WantedBy=multi-user.target
