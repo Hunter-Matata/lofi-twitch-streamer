@@ -1,90 +1,34 @@
-# lofi-stream
+#!/usr/bin/env python3
+#
+# MIT License
+#
 # Copyright (c) 2025 Hunter-Matata
 #
-# This code is licensed under the MIT License.
-# You are free to use, modify, and distribute this code.
-# See the LICENSE file or https://opensource.org/licenses/MIT for details.
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 
+import sys
 import os
-import random
-import subprocess
-import time
-from dotenv import load_dotenv
 
-load_dotenv()
+# Add src directory to Python path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
-AUDIO_DIR = "audio"
-RTMP_URL = os.getenv("RTMP_URL")
-STREAM_KEY = os.getenv("STREAM_KEY")
-BACKGROUND = os.getenv("BACKGROUND")
-MAX_DURATION = int(os.getenv("MAX_DURATION", 169200))  # 47h
-
-CONCAT_FILE = "playlist.txt"
-
-
-def get_shuffled_tracks():
-    tracks = [
-        os.path.join(AUDIO_DIR, f)
-        for f in os.listdir(AUDIO_DIR)
-        if f.endswith(".mp3") and os.path.getsize(os.path.join(AUDIO_DIR, f)) > 0
-    ]
-    if not tracks:
-        raise RuntimeError("[ERROR] No valid MP3 files found in ./audio/")
-    random.shuffle(tracks)
-    return tracks
-
-
-def write_concat_file(tracks):
-    with open(CONCAT_FILE, "w") as f:
-        for track in tracks:
-            f.write(f"file '{os.path.abspath(track)}'\n")
-
-
-def build_ffmpeg_command():
-    cmd = ["ffmpeg", "-re"]
-    cmd += ["-f", "concat", "-safe", "0", "-i", CONCAT_FILE]
-    if BACKGROUND and BACKGROUND != "NONE":
-        cmd += ["-stream_loop", "-1", "-i", BACKGROUND]
-    else:
-        cmd += ["-loop", "1", "-f", "lavfi", "-i", "color=c=black:s=1280x720"]
-    cmd += [
-        "-c:v", "libx264",
-        "-preset", "veryfast",
-        "-b:v", "2500k",
-        "-c:a", "aac",
-        "-b:a", "128k",
-        "-ar", "44100",
-        "-f", "flv",
-        f"{RTMP_URL}/{STREAM_KEY}"
-    ]
-    return cmd
-
-
-def run_stream_loop():
-    start = time.time()
-    elapsed = 0
-    try:
-        while elapsed < MAX_DURATION:
-            print(f"[INFO] Shuffling playlist... {int(elapsed)}s elapsed / {MAX_DURATION}s max")
-            tracks = get_shuffled_tracks()
-            write_concat_file(tracks)
-            cmd = build_ffmpeg_command()
-            try:
-                subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            except subprocess.CalledProcessError as e:
-                print(f"[WARNING] FFmpeg crashed: {e}")
-                time.sleep(5)
-            elapsed = time.time() - start
-    finally:
-        if os.path.exists(CONCAT_FILE):
-            os.remove(CONCAT_FILE)
-        print("[INFO] Stream loop finished or max duration reached.")
-
+from main import main
 
 if __name__ == "__main__":
-    try:
-        run_stream_loop()
-    except Exception as e:
-        print(f"[FATAL] {e}")
-        time.sleep(10)
-        raise
+    main()

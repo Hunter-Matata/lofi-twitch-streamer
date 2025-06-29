@@ -1,14 +1,13 @@
 #!/bin/bash
 
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/.."
 
 echo "=== 24/7 Lofi Stream Setup ==="
 
-# Create audio directory if missing
-if [ ! -d "audio" ]; then
-    mkdir -p audio
-    echo "[INFO] Created ./audio/ directory – place your .mp3 files here."
-fi
+# Create directories
+mkdir -p audio logs
+
+echo "[INFO] Created ./audio/ and ./logs/ directories"
 
 # Ask for stream key
 read -rp "Enter your Twitch Stream Key: " stream_key
@@ -46,15 +45,18 @@ STREAM_KEY=$stream_key
 RTMP_URL=rtmp://live.twitch.tv/app
 BACKGROUND=$background
 MAX_DURATION=$duration
+CROSSFADE_DURATION=3.0
+VALIDATION_TIMEOUT=10
 EOF
 
 echo "[INFO] .env created."
 
-# Create requirements.txt if missing
-if [ ! -f "requirements.txt" ]; then
-    echo "python-dotenv" > requirements.txt
-    echo "[INFO] Created default requirements.txt"
-fi
+# Create requirements.txt
+cat <<EOF > requirements.txt
+python-dotenv
+EOF
+
+echo "[INFO] Created requirements.txt"
 
 # Ensure venv is available
 if ! python3 -m venv .venv 2>/dev/null; then
@@ -86,4 +88,5 @@ fi
 echo ""
 echo "Setup complete!"
 echo "- Place your MP3 files in ./audio/"
-echo "- Start the stream with: ./start.sh"
+echo "- Control the stream with: ./scripts/controls.sh"
+echo "- Install systemd service with: sudo cp stream.service /etc/systemd/system/ && sudo systemctl enable stream"

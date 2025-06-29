@@ -1,2 +1,13 @@
 .env
-audio/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+logs/
+audio/*.mp3
+audio/*.wav
+audio/*.flac
+audio/*.m4a
+playlist.txt
